@@ -36,7 +36,6 @@ PROBS = {
     "mutation": 0.01
 }
 
-
 def main():
 
     # Check for proper usage
@@ -93,7 +92,6 @@ def main():
                 p = probabilities[person][field][value]
                 print(f"    {value}: {p:.4f}")
 
-
 def load_data(filename):
     """
     Load gene and trait data from a file into a dictionary.
@@ -115,7 +113,6 @@ def load_data(filename):
             }
     return data
 
-
 def powerset(s):
     """
     Return a list of all possible subsets of set s.
@@ -126,7 +123,6 @@ def powerset(s):
             itertools.combinations(s, r) for r in range(len(s) + 1)
         )
     ]
-
 
 def joint_probability(people, one_gene, two_genes, have_trait):
     """
@@ -139,8 +135,52 @@ def joint_probability(people, one_gene, two_genes, have_trait):
         * everyone in set `have_trait` has the trait, and
         * everyone not in set` have_trait` does not have the trait.
     """
-    raise NotImplementedError
+    joint = 1
+    
+    for p in people:
+        # Gene count
+        if p in two_genes:
+            genes = 2
+        elif p in one_gene:
+            genes = 1
+        else:
+            genes = 0
+    
+        # Determinate trait
+        has_trait = p in have_trait
+        
+        mother = people[p]["mother"]
+        father = people[p]["father"]
 
+        # No parents
+        if mother is None and father is None:
+            gene_prob = PROBS["gene"][genes]
+
+        else:
+            # Probability of a parent passes the gene
+            def gene_pass(parent):
+                if parent in two_genes:
+                    return 1 - PROBS["mutation"]
+                elif parent in one_gene:
+                    return 0.5
+                else:
+                    return PROBS["mutation"]
+                
+            mom_pass = gene_pass(mother)
+            dad_pass = gene_pass(father)
+
+            if genes == 2:
+                gene_prob = mom_pass * dad_pass
+            elif genes == 1:
+                gene_prob = mom_pass * (1 - dad_pass) + (1 - mom_pass) * dad_pass
+            else:
+                gene_prob = (1 - mom_pass) * (1 - dad_pass)
+
+        trait_prob = PROBS["trait"][genes][has_trait]
+
+        joint *= gene_prob * trait_prob
+
+    return joint
 
 def update(probabilities, one_gene, two_genes, have_trait, p):
     """
@@ -151,14 +191,12 @@ def update(probabilities, one_gene, two_genes, have_trait, p):
     """
     raise NotImplementedError
 
-
 def normalize(probabilities):
     """
     Update `probabilities` such that each probability distribution
     is normalized (i.e., sums to 1, with relative proportions the same).
     """
     raise NotImplementedError
-
 
 if __name__ == "__main__":
     main()
